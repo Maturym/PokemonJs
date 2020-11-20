@@ -1,8 +1,11 @@
 
 const allPokemons = 'https://pokeapi.co/api/v2/pokemon?offset=0&limit=50';
+const allTypes = 'https://pokeapi.co/api/v2/type/';
+const allLocation = 'https://pokeapi.co/api/v2/location';
 // const onePokemon = "https://pokeapi.co/api/v2/pokemon/1/";
 
-const cardContain = document.querySelector('.cards');
+const cardContain = document.querySelector('.cards'),
+  cardTags = document.querySelector('.card-tags');
 
 
 // const getData = (url, callback, reject = console.error) => {
@@ -34,7 +37,6 @@ const state = {
 
 const createCards = (data) => {
 
-
   const { weight, height, id, name, types } = data;
 
   const pokemonCard = document.createElement('a');
@@ -44,7 +46,7 @@ const createCards = (data) => {
   // pokemonCard.href = 'card.html';
 
   pokemonCard.insertAdjacentHTML('beforeend', `
-        <img src="https://pokeres.bastionbot.org/images/pokemon/${id}.png" alt="" class="card-img">
+        <img src="https://pokeres.bastionbot.org/images/pokemon/${id}.png " alt="" class="card-img">
           <div class="card-nfo">
             <h3 class="card-id">№0${id<10 ? "0"+id : id}</h3>
             <h1 class="card-title">${name}</h1>
@@ -90,6 +92,8 @@ const createCards = (data) => {
 const createCard = (data) => {
   // console.log(data);
   const { height, id ,name, stats, types, weight, abilities, location_area_encounters: location } = data;
+
+  window.scrollTo(0,0)
 
   let locationURL = location;
 
@@ -336,18 +340,50 @@ const createCard = (data) => {
     const englishElem = dataEffects.find((item) => {
       if (item.language.name === 'en') {return item};
     })
+     
+    const infoAbilityDescr = document.querySelector('.info-ability-descr');
 
-    let sliced = englishElem.effect.slice(0,380);
+    if (document.documentElement.clientWidth <= 770 && document.documentElement.clientWidth > 320){
+       sliced = englishElem.effect.slice(0,339);
 
-    if (sliced.length < englishElem.effect.length) {
-      sliced += '...';
-    }
+      if (sliced.length < englishElem.effect.length) {
+        sliced += '...';
+      }
 
-    const infoAbilityDescr = document.querySelector('.info-ability-descr')
+      infoAbilityDescr.textContent = sliced;
 
-    infoAbilityDescr.textContent = sliced;
-    
+    } else if (document.documentElement.clientWidth <= 320) {
+        sliced = englishElem.effect.slice(0,200);
+
+        if (sliced.length < englishElem.effect.length) {
+        sliced += '...';
+        }
+        infoAbilityDescr.textContent = sliced;
+    } else if (document.documentElement.clientWidth > 320){
+
+      sliced = englishElem.effect.slice(0,380);
+
+        if (sliced.length < englishElem.effect.length) {
+        sliced += '...';
+        }
+      infoAbilityDescr.textContent = sliced;
+    }  
   }; 
+
+  const filterByType = (target) => {
+
+    getData.getAllPokemons(allTypes, ({results}) => {
+      const typeName = results.find((item) => {
+        if (item.name === target) {return item};
+      })
+      getData.getAllPokemons(typeName.url, ({ pokemon }) => {
+        pokemon.forEach(({ pokemon }) => {
+          cardContain.textContent = '';
+          getData.getAllPokemons(pokemon.url, createCards)
+        })
+      })
+    })
+  }
 
   getData.getAllPokemons(abilityURL, getAbility);
   getData.getAllPokemons(locationURL, getLocation);  
@@ -358,7 +394,6 @@ const createCard = (data) => {
     pokemonInfo = document.querySelector('.pokemon-info'),
     infoCloseBtn = document.querySelector('.info-close-btn');
 
-
   infOpen.addEventListener('click', () => {
     pokemonInfoClose.classList.add('active');
     pokemonInfo.classList.add('active');
@@ -367,6 +402,20 @@ const createCard = (data) => {
   infoCloseBtn.addEventListener('click', ()=> {
     pokemonInfoClose.classList.remove('active');
     pokemonInfo.classList.remove('active');
+  })
+
+  cardTags.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = e.target.closest('.card-tag').textContent;
+
+    filterByType(target);
+
+    // if (e.target.closest('.card-tag')) {
+    //   const target = e.target.closest('.card-tag').textContent;
+
+    //   getData.getAllPokemons(allTypes, filterByType)
+    // } else return;
+  
   })
 }
 
@@ -382,6 +431,7 @@ const getPokemonCard = (allPokemons) => {
   })
 };
 
+
 const getData = {
 
   getAllPokemons(url, handler) {  
@@ -393,19 +443,28 @@ const getData = {
 
 }
 
-const getCard = (e) => {
-  e.preventDefault();
-  const target = e.target.closest('.card').id
-  
-  getData.getAllPokemons(`https://pokeapi.co/api/v2/pokemon/${target}`, createCard)
-}
 
-cardContain.addEventListener('click', (e) => {
-  getCard(e);
-})
 
-// getData.getAllPokemons(allPokemons, console.log)
 
 getData.getAllPokemons(allPokemons, getPokemonCard);
+
+const init = () => {
+
+  cardContain.addEventListener('click', (e) => {
+    e.preventDefault();
+  
+    if (e.target.closest('.card')) {
+      const target = e.target.closest('.card').id;
+  
+      getData.getAllPokemons(`https://pokeapi.co/api/v2/pokemon/${target}`, createCard)
+  
+    } else return;
+  });
+  
+  // getData.getAllPokemons(allPokemons, console.log)
+  
+}
+
+document.addEventListener('DOMContentLoaded', init);
 
 
