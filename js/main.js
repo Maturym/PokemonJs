@@ -1,41 +1,101 @@
 
-const allPokemons = 'https://pokeapi.co/api/v2/pokemon?offset=0&limit=50';
+const allPokemons = 'https://pokeapi.co/api/v2/pokemon?offset=0&limit=20';
 const allTypes = 'https://pokeapi.co/api/v2/type/';
-const allLocation = 'https://pokeapi.co/api/v2/location';
+const allLocation = 'https://pokeapi.co/api/v2/location/?offset=0&limit=780';
 // const onePokemon = "https://pokeapi.co/api/v2/pokemon/1/";
 
 const cardContain = document.querySelector('.cards'),
-  cardTags = document.querySelector('.card-tags');
+  cardTags = document.querySelector('.card-tags'),
+  container = document.querySelector('.container.main-container');
+
+const totalPokemon = 780;
+const postsPerPage = 20;
+
+const firstURL = `https://pokeapi.co/api/v2/pokemon?offset=0&limit=${postsPerPage}`;
+
+const lastURL = `https://pokeapi.co/api/v2/pokemon?offset=${totalPokemon - postsPerPage}&limit=${postsPerPage}`;
+
+let state = {
+
+  currentPage: 1,
+  currentBtn: '',
+};
 
 
-// const getData = (url, callback, reject = console.error) => {
-//   const request = new XMLHttpRequest();
 
-//   request.open('GET', url);
+const Pagination = (currentPage) => {
 
-//   request.addEventListener('readystatechange', () => {
-//     if (request.readyState !== 4) return;
+  const pageNumbers = [];
 
-//     if (request.status === 200) {
-//       callback(JSON.parse(request.response));
-//     } else {
-//       reject(request.state);
-//     }
-//   });
+  const pages = 3;
+        
+  const maxLeft = currentPage - pages >= 1 ? currentPage - pages : 1;
+  const maxRight = (+currentPage + pages) <= Math.ceil(totalPokemon / postsPerPage) ? +currentPage + pages : Math.ceil(totalPokemon / postsPerPage);
 
-//   request.send();
-// };
 
-const state = {
+  for (let i = maxLeft; i <=maxRight; i++){
+    pageNumbers.push(i)
+  }
+
+
+  const paginationBlock = document.querySelector('.pagination-block');
+  paginationBlock.innerHTML = '';
+
+  pageNumbers.map(number => {
+    paginationBlock.insertAdjacentHTML('beforeend', `
+      <button class="btn"> ${number}</button>
+    `)
+  });
+
+  if (state.currentPage != 1) {
+    paginationBlock.insertAdjacentHTML('afterbegin', `<button class="btn-first">First</button>`)
+  }
+
+  if (state.currentPage != Math.ceil(totalPokemon / postsPerPage)) {
+    paginationBlock.insertAdjacentHTML('beforeend', `<button class="btn-last">Last</button>`)
+  }
+
+  container.insertAdjacentElement('afterbegin', paginationBlock);
+
+  btn = document.querySelectorAll('.btn');
+  const btnLast = document.querySelector('.btn-last');
+  // const btnFirst = document.querySelector('.btn-first');
+  btn.forEach(item => (+item.textContent === +currentPage) ? item.style.backgroundColor = '#bebebe': null);
+
+
+  btn.forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      const pageURL = `https://pokeapi.co/api/v2/pokemon?offset=${+e.target.textContent*postsPerPage - postsPerPage}&limit=${postsPerPage}`;
+      state.currentPage = (e.target.textContent)
+      getData.getAllPokemons(pageURL, getPokemonCard);
+    })
+  });
+
+  const btnFirst = document.querySelector('.btn-first');
+
+
+  if (btnLast) {
+    btnLast.addEventListener('click', (e) => {
+      e.preventDefault();
+      state.currentPage = Math.ceil(totalPokemon / postsPerPage)
+      getData.getAllPokemons(lastURL, getPokemonCard);
+    })
+  };
   
-  'page': 1,
-  'cards': 5,
 
-} 
+  if (btnFirst){
+    btnFirst.addEventListener('click', (e) => {
+      e.preventDefault();
+      getData.getAllPokemons(firstURL, getPokemonCard);
+      state.currentPage = 1;
+    })
+  }
 
-// const pagination()
+}
 
 const createCards = (data) => {
+
 
   const { weight, height, id, name, types } = data;
 
@@ -43,12 +103,13 @@ const createCards = (data) => {
   pokemonCard.className = 'card';
   pokemonCard.href = "#${name}"
   pokemonCard.id = id;
+
   // pokemonCard.href = 'card.html';
 
   pokemonCard.insertAdjacentHTML('beforeend', `
         <img src="https://pokeres.bastionbot.org/images/pokemon/${id}.png " alt="" class="card-img">
           <div class="card-nfo">
-            <h3 class="card-id">№0${id<10 ? "0"+id : id}</h3>
+            <h3 class="card-id">№${id<10 ? "00"+id : id>=10 && id<100 ? "0"+id : id}</h3>
             <h1 class="card-title">${name}</h1>
             <div class="card-tags">
             </div>
@@ -74,23 +135,13 @@ const createCards = (data) => {
 
 }
 
-// function getData(handler){
-//   fetch('https://pokeapi.co/api/v2/pokemon?offset=0&limit=50')
-//   .then(response => response.json())
-//   .then((allpokemon) => {
-//     allpokemon.results.forEach((pokemon, index) => {
-//       let url = pokemon.url;
-//       fetch(url)
-//       .then(response => response.json())
-//       .then(function(pokemonInfo){
-//         handler(pokemonInfo)
-//       })
-//     })
-//   })
-// }
 
 const createCard = (data) => {
   // console.log(data);
+  const pageBlock = document.querySelector('.pagination-block');
+
+  pageBlock.innerHTML = '';
+
   const { height, id ,name, stats, types, weight, abilities, location_area_encounters: location } = data;
 
   window.scrollTo(0,0)
@@ -104,7 +155,7 @@ const createCard = (data) => {
   const pokemon = `
         <div class="main-wrapper">
           <h1 class="pokemon-name">${name.toUpperCase()}
-            <span class="pokemon-id">№0${id<10 ? "0"+id : id}</span>
+            <span class="pokemon-id">№${id<10 ? "00"+id : id>=10 && id<100 ? "0"+id : id}</span>
           </h1>
           <div class="card-block">
             <img src="https://pokeres.bastionbot.org/images/pokemon/${id}.png" alt="" class="card-left-img">
@@ -298,6 +349,24 @@ const createCard = (data) => {
 
   });
 
+  const filterByLocation = (target) => {
+    
+    // Pagination(state.currentPage);
+    getData.getAllPokemons(allLocation, ({ results }) => {
+      const locationName = results.find(({ name }) => name === target ? name : null);
+      const locationId = locationName.url.split('/location/')[1].slice('/')[0];
+      const locationURL = `https://pokeapi.co/api/v2/location-area/${locationId}`;
+  
+      getData.getAllPokemons(locationURL, ({ pokemon_encounters: pokemon }) => {
+  
+        pokemon.forEach(({ pokemon }) => {
+          cardContain.textContent = '';
+          getData.getAllPokemons(pokemon.url, createCards)
+        })
+      })
+    })
+  }
+
   const getLocation = (data) => {
 
     const locationName = document.querySelector('.card-page-location');
@@ -310,7 +379,7 @@ const createCard = (data) => {
     } else {
       data.forEach(({ location_area }) => {
 
-        const name = location_area.name;
+        const name = location_area.name.split('-area')[0];
 
         const locationTag = document.createElement('div');
         locationTag.className = 'card-tag card-tag-location';
@@ -320,8 +389,16 @@ const createCard = (data) => {
         locationTag.location = name;
   
         locationName.insertAdjacentElement('beforeend', locationTag); 
+      })
+    } 
+    const locationTag = document.querySelectorAll('.card-tag-location');
+
+    locationTag.forEach(tag => {
+      tag.addEventListener('click', (e) => {
+        e.preventDefault();
+        filterByLocation(e.target.textContent);
+      })
     })
-    }  
     
   }
 
@@ -393,6 +470,7 @@ const createCard = (data) => {
     pokemonInfoClose = document.querySelector('.pokemon-info-close'),
     pokemonInfo = document.querySelector('.pokemon-info'),
     infoCloseBtn = document.querySelector('.info-close-btn');
+    //tagsLocation = document.querySelectorAll('.card-tags.card-page-location');
 
   infOpen.addEventListener('click', () => {
     pokemonInfoClose.classList.add('active');
@@ -420,9 +498,12 @@ const createCard = (data) => {
 }
 
 
-// getData(createCard);
-
 const getPokemonCard = (allPokemons) => {
+
+  cardContain.textContent = '';
+
+  Pagination(state.currentPage);
+
   allPokemons.results.forEach((pokemon) => {
     let url = pokemon.url;
     fetch(url)
@@ -445,10 +526,10 @@ const getData = {
 
 
 
-
-getData.getAllPokemons(allPokemons, getPokemonCard);
-
 const init = () => {
+
+
+  getData.getAllPokemons(allPokemons, getPokemonCard);
 
   cardContain.addEventListener('click', (e) => {
     e.preventDefault();
@@ -458,11 +539,9 @@ const init = () => {
   
       getData.getAllPokemons(`https://pokeapi.co/api/v2/pokemon/${target}`, createCard)
   
-    } else return;
+    } 
   });
-  
-  // getData.getAllPokemons(allPokemons, console.log)
-  
+
 }
 
 document.addEventListener('DOMContentLoaded', init);
